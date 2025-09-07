@@ -466,8 +466,10 @@ __global__ void MatrixMultiplyKernel(
         __syncthreads();
     }
     
-    int out_pos = batch * (out_shape[0] > 1 ? out_strides[0] : 0) + row * out_strides[1] + col * out_strides[2];
-    out[out_pos] = sum;
+    if (row < m && col < p) {
+        int out_pos = batch * (out_shape[0] > 1 ? out_strides[0] : 0) + row * out_strides[1] + col * out_strides[2];
+        out[out_pos] = sum;
+    }
     /// END ASSIGN2_4
 }
 
