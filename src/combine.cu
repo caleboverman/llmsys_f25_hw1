@@ -437,7 +437,6 @@ __global__ void MatrixMultiplyKernel(
     float sum = 0.0f;
     
     for (int tile = 0; tile < (n + TILE - 1) / TILE; tile++) {
-        // Load tile of matrix A into shared memory
         int a_row = row;
         int a_col = tile * TILE + threadIdx.x;
         if (a_row < m && a_col < n) {
@@ -447,7 +446,6 @@ __global__ void MatrixMultiplyKernel(
             a_shared[threadIdx.y][threadIdx.x] = 0.0f;
         }
         
-        // Load tile of matrix B into shared memory
         int b_row = tile * TILE + threadIdx.y;
         int b_col = col;
         if (b_row < n && b_col < p) {
@@ -459,7 +457,6 @@ __global__ void MatrixMultiplyKernel(
         
         __syncthreads();
         
-        // Compute partial dot product only if this thread is responsible for a valid output
         if (row < m && col < p) {
             for (int k = 0; k < TILE; k++) {
                 sum += a_shared[threadIdx.y][k] * b_shared[k][threadIdx.x];
@@ -469,11 +466,8 @@ __global__ void MatrixMultiplyKernel(
         __syncthreads();
     }
     
-    // Write result to global memory only if this thread is responsible for a valid output
-    if (row < m && col < p) {
-        int out_pos = batch * (out_shape[0] > 1 ? out_strides[0] : 0) + row * out_strides[1] + col * out_strides[2];
-        out[out_pos] = sum;
-    }
+    int out_pos = batch * (out_shape[0] > 1 ? out_strides[0] : 0) + row * out_strides[1] + col * out_strides[2];
+    out[out_pos] = sum;
     /// END ASSIGN2_4
 }
 
