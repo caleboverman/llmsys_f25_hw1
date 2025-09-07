@@ -294,9 +294,9 @@ __global__ void zipKernel(
     int out_pos = index_to_position(out_index, out_strides, out_shape_size);
 
     broadcast_index(out_index, out_shape, a_shape, a_index, out_shape_size, a_shape_size);
-    int a_pos = index_to_position(a_index, a_strides, a_shape_size);
-
     broadcast_index(out_index, out_shape, b_shape, b_index, out_shape_size, b_shape_size);
+
+    int a_pos = index_to_position(a_index, a_strides, a_shape_size);
     int b_pos = index_to_position(b_index, b_strides, b_shape_size);
 
     out[out_pos] = fn(fn_id, a_storage[a_pos], b_storage[b_pos]);
@@ -349,19 +349,11 @@ __global__ void reduceKernel(
     int out_index[MAX_DIMS];
 
     /// BEGIN ASSIGN2_3
-    // 1. Define the position of the output element that this thread or this block will write to
     int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
-    
-    // Check bounds
-    if (thread_id >= out_size) return;
-    
-    // 2. Convert the out_pos to the out_index according to out_shape
+
+    float result = reduce_value;
     to_index(thread_id, out_shape, out_index, shape_size);
     
-    // 3. Initialize the reduce_value to the output element
-    float result = reduce_value;
-    
-    // 4. Iterate over the reduce_dim dimension of the input array to compute the reduced value
     int a_index[MAX_DIMS];
     for (int i = 0; i < shape_size; i++) {
         a_index[i] = out_index[i];
@@ -373,7 +365,6 @@ __global__ void reduceKernel(
         result = fn(fn_id, result, a_storage[a_pos]);
     }
     
-    // 5. Write the reduced value to out memory
     int out_pos = index_to_position(out_index, out_strides, shape_size);
     out[out_pos] = result;
     /// END ASSIGN2_3
