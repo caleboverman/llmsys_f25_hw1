@@ -349,14 +349,33 @@ __global__ void reduceKernel(
     int out_index[MAX_DIMS];
 
     /// BEGIN ASSIGN2_3
-    /// TODO
     // 1. Define the position of the output element that this thread or this block will write to
-    // 2. Convert the out_pos to the out_index according to out_shape
-    // 3. Initialize the reduce_value to the output element
-    // 4. Iterate over the reduce_dim dimension of the input array to compute the reduced value
-    // 5. Write the reduced value to out memory
+    int thread_id = blockIdx.x * blockDim.x + threadIdx.x;
     
-    assert(false && "Not Implemented");
+    // Check bounds
+    if (thread_id >= out_size) return;
+    
+    // 2. Convert the out_pos to the out_index according to out_shape
+    to_index(thread_id, out_shape, out_index, shape_size);
+    
+    // 3. Initialize the reduce_value to the output element
+    float result = reduce_value;
+    
+    // 4. Iterate over the reduce_dim dimension of the input array to compute the reduced value
+    int a_index[MAX_DIMS];
+    for (int i = 0; i < shape_size; i++) {
+        a_index[i] = out_index[i];
+    }
+    
+    for (int i = 0; i < a_shape[reduce_dim]; i++) {
+        a_index[reduce_dim] = i;
+        int a_pos = index_to_position(a_index, a_strides, shape_size);
+        result = fn(fn_id, result, a_storage[a_pos]);
+    }
+    
+    // 5. Write the reduced value to out memory
+    int out_pos = index_to_position(out_index, out_strides, shape_size);
+    out[out_pos] = result;
     /// END ASSIGN2_3
 }
 
