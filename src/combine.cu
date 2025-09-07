@@ -427,17 +427,47 @@ __global__ void MatrixMultiplyKernel(
 
 
     /// BEGIN ASSIGN2_4
-    /// TODO
-    // Hints:
-    // 1. Compute the row and column of the output matrix this block will compute
-    // 2. Compute the position in the output array that this thread will write to
-    // 3. Iterate over tiles of the two input matrices, read the data into shared memory
-    // 4. Synchronize to make sure the data is available to all threads
-    // 5. Compute the output tile for this thread block
-    // 6. Synchronize to make sure all threads are done computing the output tile for (row, col)
-    // 7. Write the output to global memory
-
-    assert(false && "Not Implemented");
+    int row = blockIdx.y * TILE + threadIdx.y;
+    int col = blockIdx.x * TILE + threadIdx.x;
+    
+    int m = a_shape[1];
+    int n = a_shape[2];
+    int p = b_shape[2];
+    
+    float sum = 0.0f;
+    
+    for (int tile = 0; tile < (n + TILE - 1) / TILE; tile++) {
+        int a_row = row;
+        int a_col = tile * TILE + threadIdx.x;
+        if (a_row < m && a_col < n) {
+            int a_pos = batch * a_batch_stride + a_row * a_strides[1] + a_col * a_strides[2];
+            a_shared[threadIdx.y][threadIdx.x] = a_storage[a_pos];
+        } else {
+            a_shared[threadIdx.y][threadIdx.x] = 0.0f;
+        }
+        
+        int b_row = tile * TILE + threadIdx.y;
+        int b_col = col;
+        if (b_row < n && b_col < p) {
+            int b_pos = batch * b_batch_stride + b_row * b_strides[1] + b_col * b_strides[2];
+            b_shared[threadIdx.y][threadIdx.x] = b_storage[b_pos];
+        } else {
+            b_shared[threadIdx.y][threadIdx.x] = 0.0f;
+        }
+        
+        __syncthreads();
+        
+        for (int k = 0; k < TILE; k++) {
+            sum += a_shared[threadIdx.y][k] * b_shared[k][threadIdx.x];
+        }
+        
+        __syncthreads();
+    }
+    
+    if (row < m && col < p) {
+        int out_pos = batch * (out_shape[0] > 1 ? out_strides[0] : 0) + row * out_strides[1] + col * out_strides[2];
+        out[out_pos] = sum;
+    }
     /// END ASSIGN2_4
 }
 
