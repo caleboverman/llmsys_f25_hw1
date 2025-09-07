@@ -263,9 +263,9 @@ class CudaKernelOps(TensorOps):
             b._tensor._storage,
             b._tensor._shape.astype(np.int32),
             b._tensor._strides.astype(np.int32),
-            out.shape[0],  # batch_size
-            out.shape[1],  # m
-            out.shape[2]   # p
+            out.shape[0],
+            out.shape[1],
+            out.shape[2]
         )
         # END ASSIGN2_4
         
